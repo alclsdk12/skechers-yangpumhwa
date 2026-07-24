@@ -997,12 +997,20 @@ function sanitizeBarcodeValue(v){
 }
 function attachBarcodeSanitizer(id){
   const el = document.getElementById(id);
+  let composing = false;
   const clean = ()=>{
     const filtered = sanitizeBarcodeValue(el.value);
     if(filtered !== el.value) el.value = filtered;
   };
-  el.addEventListener("input", clean);
-  el.addEventListener("compositionend", clean); // 한글 IME로 조합 완료된 경우까지 보정
+  el.addEventListener("compositionstart", ()=>{ composing = true; });
+  el.addEventListener("compositionend", ()=>{ composing = false; clean(); });
+  el.addEventListener("input",(e)=>{
+    // 한글 조합이 진행 중일 때 값을 강제로 바꾸면 IME 내부 조합 상태와 어긋나서
+    // 글자가 겹쳐 찍히는(중복) 오류가 발생함 -> 조합 중에는 건드리지 않고, 조합이 끝난 뒤(compositionend)
+    // 또는 조합이 아예 필요없는 일반 입력(숫자/영문 직접 입력)일 때만 보정한다.
+    if(composing || e.isComposing) return;
+    clean();
+  });
 }
 ["in-returnNo","in-itemBarcode"].forEach(attachBarcodeSanitizer);
 
@@ -1013,6 +1021,7 @@ let lastRegisteredId = null;
 fieldOrder.forEach((id,idx)=>{
   const el = document.getElementById(id);
   el.addEventListener("keydown",(e)=>{
+    if(e.isComposing || e.keyCode===229) return; // 한글 조합 확정용 Enter는 무시 (다음 스캔 Enter에서 정상 동작)
     if(e.key==="Enter"){
       e.preventDefault();
       if(idx<fieldOrder.length-1){
@@ -1029,8 +1038,9 @@ fieldOrder.forEach((id,idx)=>{
 function registerItem(){
   const returnNoEl = document.getElementById("in-returnNo");
   const itemBarcodeEl = document.getElementById("in-itemBarcode");
-  const returnNo = returnNoEl.value.trim();
-  const itemBarcode = itemBarcodeEl.value.trim();
+  // 최종 안전장치: 등록 직전에 한 번 더 보정(이미 깨끗하면 그대로 유지됨)
+  const returnNo = sanitizeBarcodeValue(returnNoEl.value.trim());
+  const itemBarcode = sanitizeBarcodeValue(itemBarcodeEl.value.trim());
 
   if(!returnNo && !itemBarcode){
     toast("최소 한 개 이상의 항목을 입력해주세요.","warn");
