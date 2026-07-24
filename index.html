@@ -192,6 +192,24 @@ main{flex:1;padding:24px 28px 60px;max-width:1400px;width:100%;margin:0 auto;}
   border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 4px var(--accent-soft);
 }
 .field input.dup-warn{border-color:var(--warning);background:var(--warning-soft);}
+.status-picker{border:1.5px solid var(--border);background:var(--surface-2);border-radius:var(--radius-sm);min-height:47px;display:flex;align-items:center;transition:all .18s ease;padding:0 2px;}
+.status-picker.active{border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 4px var(--accent-soft);animation:statusPickerIn .22s ease;}
+@keyframes statusPickerIn{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
+.status-picker-placeholder{color:var(--text-3);font-size:13px;font-weight:500;padding:12px 13px;}
+.status-picker-options{display:none;gap:6px;width:100%;padding:5px;}
+.status-picker-options.show{display:flex;}
+.status-picker-opt{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  border:1.5px solid var(--border);background:var(--surface);border-radius:9px;
+  padding:8px 4px;cursor:pointer;transition:all .15s ease;font-family:inherit;color:var(--text);
+}
+.status-picker-opt:hover{background:var(--surface-hover);border-color:var(--border-strong);}
+.status-picker-opt.focused{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface);}
+.status-picker-opt .spo-num{
+  font-family:var(--font-mono);font-weight:800;font-size:11px;color:var(--text-2);
+  background:var(--surface-2);border-radius:6px;padding:1px 6px;flex-shrink:0;
+}
+.status-picker-opt .pill{pointer-events:none;}
 .reg-actions{display:flex;justify-content:flex-end;margin-top:16px;gap:8px;}
 
 .btn{
@@ -248,6 +266,7 @@ tbody tr.selected{background:var(--accent-soft);}
 .editable-cell input:focus, .editable-cell select:focus, .editable-cell textarea:focus{
   border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft);
 }
+.editable-cell input.mono-input{font-family:var(--font-mono);}
 
 .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;}
 .pill .d{width:6px;height:6px;border-radius:99px;}
@@ -410,12 +429,20 @@ tbody tr.selected{background:var(--accent-soft);}
               <input type="text" id="in-returnNo" placeholder="바코드 스캔 또는 입력" autocomplete="off">
             </div>
             <div class="field">
-              <label><span class="scan-dot"></span>운송장번호</label>
-              <input type="text" id="in-trackingNo" placeholder="바코드 스캔 또는 입력" autocomplete="off">
-            </div>
-            <div class="field">
               <label><span class="scan-dot"></span>내품 바코드</label>
               <input type="text" id="in-itemBarcode" placeholder="바코드 스캔 또는 입력" autocomplete="off">
+            </div>
+            <div class="field">
+              <label>상태 <span style="font-weight:500;color:var(--text-3)">(스캔 완료 후 자동 표시 · 숫자 1~4)</span></label>
+              <div class="status-picker" id="status-picker">
+                <div class="status-picker-placeholder" id="status-picker-placeholder">바코드 스캔 대기 중</div>
+                <div class="status-picker-options" id="status-picker-options">
+                  <button type="button" class="status-picker-opt" data-key="none"><span class="spo-num">1</span><span class="pill none"><span class="d"></span>미양품화</span></button>
+                  <button type="button" class="status-picker-opt" data-key="done"><span class="spo-num">2</span><span class="pill done"><span class="d"></span>정상</span></button>
+                  <button type="button" class="status-picker-opt" data-key="hold"><span class="spo-num">3</span><span class="pill hold"><span class="d"></span>B등급</span></button>
+                  <button type="button" class="status-picker-opt" data-key="discard"><span class="spo-num">4</span><span class="pill discard"><span class="d"></span>C등급</span></button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="reg-actions">
@@ -426,6 +453,7 @@ tbody tr.selected{background:var(--accent-soft);}
             <span><kbd>Enter</kbd> 다음 칸 이동 / 등록</span>
             <span><kbd>Esc</kbd> 입력 초기화</span>
             <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 등록</span>
+            <span>등록 완료 시 <kbd>↑</kbd><kbd>↓</kbd> 상태 선택 후 <kbd>Enter</kbd></span>
           </div>
         </div>
       </div>
@@ -504,9 +532,9 @@ tbody tr.selected{background:var(--accent-soft);}
             <div class="seg" id="s2-statusSeg">
               <button class="active" data-status="all">전체상태</button>
               <button data-status="none">미양품화</button>
-              <button data-status="done">완료</button>
-              <button data-status="hold">보류</button>
-              <button data-status="discard">폐기</button>
+              <button data-status="done">정상</button>
+              <button data-status="hold">B등급</button>
+              <button data-status="discard">C등급</button>
             </div>
             <select class="select-plain" id="s2-sort">
               <option value="desc">최신순</option>
@@ -556,6 +584,23 @@ tbody tr.selected{background:var(--accent-soft);}
     <div class="modal-foot">
       <button class="btn btn-ghost" data-close="modal-edit">취소</button>
       <button class="btn btn-primary" id="btnSaveEdit"><i data-lucide="check"></i>저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Quick Note Modal (B등급/C등급 등록 직후 비고 즉시 입력) ===== -->
+<div class="modal-overlay" id="modal-quick-note">
+  <div class="modal small">
+    <div class="modal-head"><h3 id="quick-note-title">비고 입력</h3></div>
+    <div class="modal-body">
+      <div class="field">
+        <label id="quick-note-label">사유를 입력하세요</label>
+        <input type="text" id="quick-note-input" placeholder="비고 입력 후 Enter" autocomplete="off">
+      </div>
+      <div class="kbd-hint" style="padding-top:12px;">
+        <span><kbd>Enter</kbd> 저장하고 다음 스캔</span>
+        <span><kbd>Esc</kbd> 건너뛰고 다음 스캔</span>
+      </div>
     </div>
   </div>
 </div>
@@ -689,10 +734,11 @@ function renderIcons(scope){
 const STORAGE_KEY = "skechers_ypw_system_v1";
 const STATUS = {
   none:{label:"미양품화",cls:"none"},
-  done:{label:"양품화완료",cls:"done"},
-  hold:{label:"보류",cls:"hold"},
-  discard:{label:"폐기",cls:"discard"}
+  done:{label:"정상",cls:"done"},
+  hold:{label:"B등급",cls:"hold"},
+  discard:{label:"C등급",cls:"discard"}
 };
+const LEGACY_STATUS_MAP = {"미양품화":"미양품화","양품화완료":"정상","보류":"B등급","폐기":"C등급"};
 
 function loadState(){
   try{
@@ -707,6 +753,15 @@ function loadState(){
   return {items:[], settings:{darkMode:false}};
 }
 let state = loadState();
+/* 기존에 저장된 데이터의 상태값(구 표기)을 새 표기로 자동 변환 */
+(function migrateStatusLabels(){
+  let changed = false;
+  state.items.forEach(it=>{
+    const mapped = LEGACY_STATUS_MAP[it.status];
+    if(mapped && mapped !== it.status){ it.status = mapped; changed = true; }
+  });
+  if(changed) persist();
+})();
 function persist(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
   catch(e){ toast("저장 공간이 부족하여 저장에 실패했습니다.","error"); }
@@ -886,20 +941,75 @@ function checkDup(field, value){
   if(!value) return 0;
   return state.items.filter(i=>!i.deleted && i[field]===value).length;
 }
-["returnNo","trackingNo","itemBarcode"].forEach(f=>{
+["returnNo","itemBarcode"].forEach(f=>{
   const el = document.getElementById("in-"+f);
   el.addEventListener("blur", ()=>{
     const count = checkDup(f, el.value.trim());
     el.classList.toggle("dup-warn", count>0);
     if(count>0){
-      const labelMap = {returnNo:"반송장번호",trackingNo:"운송장번호",itemBarcode:"내품바코드"};
+      const labelMap = {returnNo:"반송장번호",itemBarcode:"내품바코드"};
       toast(`이미 등록된 ${labelMap[f]}입니다 (${count}건 존재)`, "warn");
     }
   });
 });
 
+/* 바코드 스캐너 입력 보정: 한/영 전환이 안 되어 있어 한글로 찍혀도 원래 눌린 영문 키로 자동 복원 */
+const JAMO_TO_KEY = {
+  "ㅂ":"Q","ㅃ":"Q","ㅈ":"W","ㅉ":"W","ㄷ":"E","ㄸ":"E","ㄱ":"R","ㄲ":"R","ㅅ":"T","ㅆ":"T",
+  "ㅛ":"Y","ㅕ":"U","ㅑ":"I","ㅐ":"O","ㅒ":"O","ㅔ":"P","ㅖ":"P",
+  "ㅁ":"A","ㄴ":"S","ㅇ":"D","ㄹ":"F","ㅎ":"G","ㅗ":"H","ㅓ":"J","ㅏ":"K","ㅣ":"L",
+  "ㅋ":"Z","ㅌ":"X","ㅊ":"C","ㅍ":"V","ㅠ":"B","ㅜ":"N","ㅡ":"M"
+};
+const VOWEL_COMPOUNDS = {"ㅘ":"ㅗㅏ","ㅙ":"ㅗㅐ","ㅚ":"ㅗㅣ","ㅝ":"ㅜㅓ","ㅞ":"ㅜㅔ","ㅟ":"ㅜㅣ","ㅢ":"ㅡㅣ"};
+const JONG_COMPOUNDS = {"ㄳ":"ㄱㅅ","ㄵ":"ㄴㅈ","ㄶ":"ㄴㅎ","ㄺ":"ㄹㄱ","ㄻ":"ㄹㅁ","ㄼ":"ㄹㅂ","ㄽ":"ㄹㅅ","ㄾ":"ㄹㅌ","ㄿ":"ㄹㅍ","ㅀ":"ㄹㅎ","ㅄ":"ㅂㅅ"};
+const CHO_LIST = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+const JUNG_LIST = ["ㅏ","ㅐ","ㅑ","ㅒ","ㅓ","ㅔ","ㅕ","ㅖ","ㅗ","ㅘ","ㅙ","ㅚ","ㅛ","ㅜ","ㅝ","ㅞ","ㅟ","ㅠ","ㅡ","ㅢ","ㅣ"];
+const JONG_LIST = ["","ㄱ","ㄲ","ㄳ","ㄴ","ㄵ","ㄶ","ㄷ","ㄹ","ㄺ","ㄻ","ㄼ","ㄽ","ㄾ","ㄿ","ㅀ","ㅁ","ㅂ","ㅄ","ㅅ","ㅆ","ㅇ","ㅈ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+
+function jamoToKeys(ch){
+  if(VOWEL_COMPOUNDS[ch]) return VOWEL_COMPOUNDS[ch].split("").map(c=>JAMO_TO_KEY[c]||"").join("");
+  if(JONG_COMPOUNDS[ch]) return JONG_COMPOUNDS[ch].split("").map(c=>JAMO_TO_KEY[c]||"").join("");
+  return JAMO_TO_KEY[ch] || "";
+}
+function hangulCharToKeys(ch){
+  const code = ch.charCodeAt(0);
+  if(code>=0xAC00 && code<=0xD7A3){
+    // 완성형 한글 음절 분해: 초성/중성/종성
+    const offset = code - 0xAC00;
+    const cho = CHO_LIST[Math.floor(offset/(21*28))];
+    const jung = JUNG_LIST[Math.floor((offset%(21*28))/28)];
+    const jongIdx = offset%28;
+    const jong = JONG_LIST[jongIdx];
+    return jamoToKeys(cho) + jamoToKeys(jung) + (jong?jamoToKeys(jong):"");
+  }
+  if(code>=0x3131 && code<=0x318E){
+    // 낱개 자모(조합되지 않은 자음/모음)
+    return jamoToKeys(ch);
+  }
+  return ch; // 한글이 아니면 그대로
+}
+function hangulToKeys(str){
+  return (str||"").split("").map(hangulCharToKeys).join("");
+}
+function sanitizeBarcodeValue(v){
+  const restored = hangulToKeys(v);
+  return restored.toUpperCase().replace(/[^A-Z0-9\-]/g,"");
+}
+function attachBarcodeSanitizer(id){
+  const el = document.getElementById(id);
+  const clean = ()=>{
+    const filtered = sanitizeBarcodeValue(el.value);
+    if(filtered !== el.value) el.value = filtered;
+  };
+  el.addEventListener("input", clean);
+  el.addEventListener("compositionend", clean); // 한글 IME로 조합 완료된 경우까지 보정
+}
+["in-returnNo","in-itemBarcode"].forEach(attachBarcodeSanitizer);
+
 /* ================= REGISTRATION FORM (barcode flow) ================= */
-const fieldOrder = ["in-returnNo","in-trackingNo","in-itemBarcode"];
+const fieldOrder = ["in-returnNo","in-itemBarcode"];
+let lastRegisteredId = null;
+
 fieldOrder.forEach((id,idx)=>{
   const el = document.getElementById(id);
   el.addEventListener("keydown",(e)=>{
@@ -915,23 +1025,127 @@ fieldOrder.forEach((id,idx)=>{
     }
   });
 });
+
 function registerItem(){
-  const returnNo = document.getElementById("in-returnNo").value.trim();
-  const trackingNo = document.getElementById("in-trackingNo").value.trim();
-  const itemBarcode = document.getElementById("in-itemBarcode").value.trim();
-  if(!returnNo && !trackingNo && !itemBarcode){
+  const returnNoEl = document.getElementById("in-returnNo");
+  const itemBarcodeEl = document.getElementById("in-itemBarcode");
+  const returnNo = returnNoEl.value.trim();
+  const itemBarcode = itemBarcodeEl.value.trim();
+
+  if(!returnNo && !itemBarcode){
     toast("최소 한 개 이상의 항목을 입력해주세요.","warn");
     return;
   }
-  addItem({returnNo,trackingNo,itemBarcode});
-  toast("등록되었습니다.","success");
-  clearForm();
+  if(!itemBarcode){
+    toast("정상적인 바코드 형식이 아닙니다. 내품 바코드를 다시 스캔해주세요.","warn");
+    itemBarcodeEl.focus();
+    return;
+  }
+
+  const item = addItem({returnNo, trackingNo:"", itemBarcode});
+  lastRegisteredId = item.id;
+  toast("등록되었습니다. 상태를 선택해주세요.","success");
+  clearScanFields();
   renderAll();
+  activateStatusPicker();
+}
+
+function clearScanFields(){
+  fieldOrder.forEach(id=>{ const el=document.getElementById(id); el.value=""; el.classList.remove("dup-warn"); });
 }
 function clearForm(){
-  fieldOrder.forEach(id=>{ const el=document.getElementById(id); el.value=""; el.classList.remove("dup-warn"); });
+  clearScanFields();
+  cancelStatusPicker();
+}
+
+/* ================= 상태 선택 패널 (네이티브 select의 브라우저별 showPicker 신뢰성 문제를 피하기 위해 직접 구현) ================= */
+const statusPickerEl = document.getElementById("status-picker");
+const statusPlaceholderEl = document.getElementById("status-picker-placeholder");
+const statusOptionsEl = document.getElementById("status-picker-options");
+const statusOptButtons = Array.from(document.querySelectorAll(".status-picker-opt"));
+const STATUS_DIGIT_MAP = {"1":"none","2":"done","3":"hold","4":"discard"};
+
+function activateStatusPicker(){
+  statusPlaceholderEl.style.display = "none";
+  statusOptionsEl.classList.add("show");
+  statusPickerEl.classList.add("active");
+  highlightStatusOpt(0);
+  statusOptButtons[0].focus();
+}
+function deactivateStatusPicker(){
+  statusPickerEl.classList.remove("active");
+  statusOptionsEl.classList.remove("show");
+  statusPlaceholderEl.style.display = "block";
+  statusOptButtons.forEach(b=>b.classList.remove("focused"));
+}
+function highlightStatusOpt(idx){
+  statusOptButtons.forEach((b,i)=>b.classList.toggle("focused", i===idx));
+}
+function chooseStatus(key){
+  if(!lastRegisteredId){ deactivateStatusPicker(); return; }
+  const registeredId = lastRegisteredId;
+  updateItem(registeredId, {status: STATUS[key].label});
+  renderAll();
+  deactivateStatusPicker();
+  if(key==="hold" || key==="discard"){
+    openQuickNote(registeredId, key);
+  }else{
+    lastRegisteredId = null;
+    document.getElementById("in-returnNo").focus();
+  }
+}
+function cancelStatusPicker(){
+  lastRegisteredId = null;
+  deactivateStatusPicker();
   document.getElementById("in-returnNo").focus();
 }
+statusOptButtons.forEach((btn,idx)=>{
+  btn.addEventListener("click", ()=> chooseStatus(btn.dataset.key));
+  btn.addEventListener("focus", ()=> highlightStatusOpt(idx));
+  btn.addEventListener("keydown",(e)=>{
+    let digit = null;
+    if(/^[1-4]$/.test(e.key)) digit = e.key;
+    else if(/^(Numpad|Digit)[1-4]$/.test(e.code)) digit = e.code.slice(-1);
+    if(digit){ e.preventDefault(); e.stopPropagation(); chooseStatus(STATUS_DIGIT_MAP[digit]); return; }
+
+    if(e.key==="ArrowRight" || e.key==="ArrowDown"){
+      e.preventDefault(); const next=(idx+1)%statusOptButtons.length; highlightStatusOpt(next); statusOptButtons[next].focus();
+    }else if(e.key==="ArrowLeft" || e.key==="ArrowUp"){
+      e.preventDefault(); const prev=(idx+statusOptButtons.length-1)%statusOptButtons.length; highlightStatusOpt(prev); statusOptButtons[prev].focus();
+    }else if(e.key==="Enter" || e.key===" "){
+      e.preventDefault(); e.stopPropagation(); chooseStatus(btn.dataset.key);
+    }else if(e.key==="Escape"){
+      e.preventDefault(); e.stopPropagation(); cancelStatusPicker();
+    }
+  });
+});
+
+/* B등급/C등급 등록 직후 비고를 클릭 없이 바로 키보드로 입력하는 팝업 */
+function openQuickNote(itemId, key){
+  lastRegisteredId = itemId;
+  const grade = key==="hold" ? "B등급" : "C등급";
+  document.getElementById("quick-note-title").textContent = `${grade} 비고 입력`;
+  document.getElementById("quick-note-label").textContent = `${grade} 사유를 입력하세요`;
+  const input = document.getElementById("quick-note-input");
+  input.value = "";
+  openModal("modal-quick-note");
+  setTimeout(()=>input.focus(), 30);
+}
+function confirmQuickNote(save){
+  const input = document.getElementById("quick-note-input");
+  if(save && lastRegisteredId){
+    updateItem(lastRegisteredId, {note: input.value.trim()});
+    renderAll();
+  }
+  closeModal("modal-quick-note");
+  lastRegisteredId = null;
+  document.getElementById("in-returnNo").focus();
+}
+document.getElementById("quick-note-input").addEventListener("keydown",(e)=>{
+  if(e.key==="Enter"){ e.preventDefault(); e.stopPropagation(); confirmQuickNote(true); }
+  else if(e.key==="Escape"){ e.preventDefault(); e.stopPropagation(); confirmQuickNote(false); }
+});
+
 document.getElementById("btnRegister").addEventListener("click", registerItem);
 document.getElementById("btnClearForm").addEventListener("click", clearForm);
 
@@ -1001,10 +1215,10 @@ function renderS2(){
       const key = statusKey(it.status);
       return `
       <tr data-id="${it.id}">
-        <td class="mono-cell">${it.date}</td>
-        <td class="mono-cell">${escapeHtml(it.returnNo)||"-"}</td>
-        <td class="mono-cell">${escapeHtml(it.trackingNo)||"-"}</td>
-        <td class="mono-cell">${escapeHtml(it.itemBarcode)||"-"}</td>
+        <td class="editable-cell"><input type="date" data-field="date" value="${it.date}"></td>
+        <td class="editable-cell"><input type="text" class="mono-input" data-field="returnNo" value="${escapeHtml(it.returnNo)}" placeholder="반송장"></td>
+        <td class="editable-cell"><input type="text" class="mono-input" data-field="trackingNo" value="${escapeHtml(it.trackingNo)}" placeholder="운송장"></td>
+        <td class="editable-cell"><input type="text" class="mono-input" data-field="itemBarcode" value="${escapeHtml(it.itemBarcode)}" placeholder="내품"></td>
         <td class="editable-cell"><textarea rows="1" data-field="yangpumContent" placeholder="양품화 내용 입력">${escapeHtml(it.yangpumContent)}</textarea></td>
         <td class="editable-cell"><input type="text" data-field="note" value="${escapeHtml(it.note)}" placeholder="비고"></td>
         <td class="editable-cell"><input type="text" data-field="manager" value="${escapeHtml(it.manager)}" placeholder="담당자"></td>
@@ -1085,9 +1299,9 @@ function renderDashboard(){
     {cls:"c-today",label:"오늘 등록",num:today},
     {cls:"c-total",label:"전체 등록",num:total},
     {cls:"c-none",label:"미양품화",num:counts.none},
-    {cls:"c-done",label:"양품화완료",num:counts.done},
-    {cls:"c-hold",label:"보류",num:counts.hold},
-    {cls:"c-discard",label:"폐기",num:counts.discard},
+    {cls:"c-done",label:"정상",num:counts.done},
+    {cls:"c-hold",label:"B등급",num:counts.hold},
+    {cls:"c-discard",label:"C등급",num:counts.discard},
   ];
   document.getElementById("dashGrid").innerHTML = cards.map(c=>`
     <div class="dash-card ${c.cls}"><span class="dot"></span><div class="num">${c.num}</div><div class="label">${c.label}</div></div>
