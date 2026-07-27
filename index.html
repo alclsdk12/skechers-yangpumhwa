@@ -242,6 +242,16 @@ main{flex:1;padding:24px 28px 60px;max-width:1400px;width:100%;margin:0 auto;}
 .seg button{border:none;background:transparent;padding:7px 12px;font-size:12.5px;font-weight:600;color:var(--text-2);border-radius:8px;cursor:pointer;transition:all .15s ease;white-space:nowrap;}
 .seg button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm);}
 .select-plain{border:1px solid var(--border);background:var(--surface-2);border-radius:10px;padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--text-2);outline:none;cursor:pointer;}
+.daterange{
+  display:flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:11px;padding:4px 10px;transition:all .16s ease;
+}
+.daterange:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft);background:var(--surface);}
+.daterange input[type="date"]{
+  border:none;background:transparent;font-size:12.5px;font-weight:600;color:var(--text);
+  font-family:var(--font-mono);outline:none;padding:5px 2px;width:124px;
+}
+.daterange span{color:var(--text-3);font-size:12px;font-weight:600;}
 
 /* Table */
 .table-wrap{overflow-x:auto;border-radius:var(--radius-md);border:1px solid var(--border);}
@@ -481,6 +491,11 @@ tbody tr.selected{background:var(--accent-soft);}
               <button data-period="week">이번주</button>
               <button data-period="month">이번달</button>
             </div>
+            <div class="daterange" id="s1-daterange">
+              <input type="date" id="s1-startDate">
+              <span>~</span>
+              <input type="date" id="s1-endDate">
+            </div>
             <select class="select-plain" id="s1-sort">
               <option value="desc">최신순</option>
               <option value="asc">오래된순</option>
@@ -528,6 +543,11 @@ tbody tr.selected{background:var(--accent-soft);}
               <button data-period="today">오늘</button>
               <button data-period="week">이번주</button>
               <button data-period="month">이번달</button>
+            </div>
+            <div class="daterange" id="s2-daterange">
+              <input type="date" id="s2-startDate">
+              <span>~</span>
+              <input type="date" id="s2-endDate">
             </div>
             <div class="seg" id="s2-statusSeg">
               <button class="active" data-status="all">전체상태</button>
@@ -768,7 +788,11 @@ function persist(){
 }
 
 function uid(){ return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9); }
-function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function fmtLocalDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function todayISO(){ return fmtLocalDate(new Date()); } // 로컬(한국) 날짜 기준, UTC 변환으로 인한 날짜 오차 방지
 function nowStamp(){ return new Date().toISOString(); }
 
 /* ================= TOAST ================= */
@@ -847,24 +871,33 @@ document.getElementById("btnDark").addEventListener("click", ()=>{
 
 /* ================= FILTER STATE ================= */
 const screenState = {
-  s1:{search:"", field:"all", period:"all", sort:"desc", page:1, pageSize:10, selectedId:null},
-  s2:{search:"", field:"all", period:"all", status:"all", sort:"desc", page:1, pageSize:10, selectedId:null}
+  s1:{search:"", field:"all", period:"all", startDate:"", endDate:"", sort:"desc", page:1, pageSize:10, selectedId:null},
+  s2:{search:"", field:"all", period:"all", startDate:"", endDate:"", status:"all", sort:"desc", page:1, pageSize:10, selectedId:null}
 };
 
-function inPeriod(dateStr, period){
-  if(period==="all") return true;
-  const d = new Date(dateStr+"T00:00:00");
-  const now = new Date(); now.setHours(0,0,0,0);
-  if(period==="today") return dateStr === todayISO();
+/* 오늘/이번주/이번달 버튼을 눌렀을 때 실제 달력 범위(시작일~종료일)를 계산 */
+function periodToRange(period){
+  const now = new Date();
+  if(period==="today"){
+    const d = todayISO();
+    return {start:d, end:d};
+  }
   if(period==="week"){
     const day = now.getDay()===0?7:now.getDay();
     const monday = new Date(now); monday.setDate(now.getDate()-day+1);
     const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
-    return d>=monday && d<=sunday;
+    return {start:fmtLocalDate(monday), end:fmtLocalDate(sunday)};
   }
   if(period==="month"){
-    return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth()+1, 0);
+    return {start:fmtLocalDate(first), end:fmtLocalDate(last)};
   }
+  return {start:"", end:""}; // 전체
+}
+function inDateRange(dateStr, start, end){
+  if(start && dateStr < start) return false;
+  if(end && dateStr > end) return false;
   return true;
 }
 
@@ -881,7 +914,7 @@ function getFiltered(screen){
       return String(it[st.field]||"").toLowerCase().includes(q);
     });
   }
-  arr = arr.filter(it=>inPeriod(it.date, st.period));
+  arr = arr.filter(it=>inDateRange(it.date, st.startDate, st.endDate));
   arr.sort((a,b)=> st.sort==="desc" ? (b.createdAt||"").localeCompare(a.createdAt||"") : (a.createdAt||"").localeCompare(b.createdAt||""));
   return arr;
 }
@@ -1425,9 +1458,26 @@ function bindToolbar(screen){
     const btn = e.target.closest("button[data-period]"); if(!btn) return;
     document.querySelectorAll("#"+prefix+"-periodSeg button").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    screenState[screen].period = btn.dataset.period; screenState[screen].page=1;
+    const period = btn.dataset.period;
+    const range = periodToRange(period);
+    screenState[screen].period = period;
+    screenState[screen].startDate = range.start;
+    screenState[screen].endDate = range.end;
+    screenState[screen].page = 1;
+    document.getElementById(prefix+"-startDate").value = range.start;
+    document.getElementById(prefix+"-endDate").value = range.end;
     renderAll();
   });
+  function onManualDateChange(){
+    screenState[screen].startDate = document.getElementById(prefix+"-startDate").value;
+    screenState[screen].endDate = document.getElementById(prefix+"-endDate").value;
+    screenState[screen].period = "custom";
+    screenState[screen].page = 1;
+    document.querySelectorAll("#"+prefix+"-periodSeg button").forEach(b=>b.classList.remove("active"));
+    renderAll();
+  }
+  document.getElementById(prefix+"-startDate").addEventListener("change", onManualDateChange);
+  document.getElementById(prefix+"-endDate").addEventListener("change", onManualDateChange);
 }
 bindToolbar("s1"); bindToolbar("s2");
 document.getElementById("s2-statusSeg").addEventListener("click", e=>{
