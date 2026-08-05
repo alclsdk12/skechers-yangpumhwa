@@ -147,7 +147,7 @@ main{flex:1;padding:24px 28px 60px;max-width:1400px;width:100%;margin:0 auto;}
 @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 
 /* Dashboard */
-.dash-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:22px;}
+.dash-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:22px;}
 @media (max-width:1100px){.dash-grid{grid-template-columns:repeat(3,1fr);}}
 @media (max-width:600px){.dash-grid{grid-template-columns:repeat(2,1fr);}}
 .dash-card{
@@ -416,6 +416,7 @@ tbody tr.selected{background:var(--accent-soft);}
 
     <div class="header-actions">
       <button class="icon-btn" id="btnShortcuts" title="단축키 안내"><i data-lucide="keyboard"></i></button>
+      <button class="icon-btn" id="btnRefList" title="고객 반품리스트 관리"><i data-lucide="file-check"></i></button>
       <button class="icon-btn" id="btnTrash" title="휴지통"><i data-lucide="trash-2"></i></button>
       <button class="icon-btn" id="btnDataMenu" title="백업/복원/가져오기"><i data-lucide="database"></i></button>
       <button class="icon-btn" id="btnPrint" title="인쇄"><i data-lucide="printer"></i></button>
@@ -505,7 +506,7 @@ tbody tr.selected{background:var(--accent-soft);}
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>등록일</th><th>반송장번호</th><th>운송장번호</th><th>내품바코드</th><th>상태</th><th>비고</th><th style="text-align:right">관리</th>
+                <th>등록일</th><th>반송장번호</th><th>운송장번호</th><th>내품바코드</th><th>상태</th><th>리스트대조</th><th>비고</th><th style="text-align:right">관리</th>
               </tr></thead>
               <tbody id="s1-tbody"></tbody>
             </table>
@@ -556,6 +557,12 @@ tbody tr.selected{background:var(--accent-soft);}
               <button data-status="hold">B등급</button>
               <button data-status="discard">C등급</button>
             </div>
+            <div class="seg" id="s2-listCheckSeg">
+              <button class="active" data-listcheck="all">리스트대조:전체</button>
+              <button data-listcheck="정상">정상</button>
+              <button data-listcheck="보류">보류</button>
+              <button data-listcheck="오입고">오입고</button>
+            </div>
             <select class="select-plain" id="s2-sort">
               <option value="desc">최신순</option>
               <option value="asc">오래된순</option>
@@ -565,7 +572,7 @@ tbody tr.selected{background:var(--accent-soft);}
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>날짜</th><th>반송장</th><th>운송장</th><th>내품</th><th style="min-width:180px">양품화 내용</th><th style="min-width:120px">비고</th><th style="min-width:90px">담당자</th><th>상태</th><th style="text-align:right">관리</th>
+                <th>날짜</th><th>반송장</th><th>운송장</th><th>내품</th><th style="min-width:180px">양품화 내용</th><th style="min-width:120px">비고</th><th style="min-width:90px">담당자</th><th>상태</th><th>리스트대조</th><th style="text-align:right">관리</th>
               </tr></thead>
               <tbody id="s2-tbody"></tbody>
             </table>
@@ -652,6 +659,32 @@ tbody tr.selected{background:var(--accent-soft);}
   </div>
 </div>
 
+<!-- ===== Reference List Modal (고객 반품리스트 관리) ===== -->
+<div class="modal-overlay" id="modal-reflist">
+  <div class="modal large">
+    <div class="modal-head"><h3>고객 반품리스트 관리</h3><button class="close-x" data-close="modal-reflist"><i data-lucide="x"></i></button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-primary btn-sm" id="btnRefListUpload"><i data-lucide="upload"></i>고객 리스트 엑셀 업로드</button>
+        <button class="btn btn-ghost btn-sm" id="btnRefListReconcile"><i data-lucide="file-spreadsheet"></i>입고대사 엑셀 다운로드</button>
+        <button class="btn btn-danger btn-sm" id="btnRefListClear"><i data-lucide="trash-2"></i>전체 삭제</button>
+        <input type="file" id="fileRefListUpload" accept=".xlsx,.xls" style="display:none">
+      </div>
+      <div class="dash-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px;">
+        <div class="dash-card c-total"><span class="dot"></span><div class="num" id="reflist-total-count">0</div><div class="label">누적 등록 건수</div></div>
+        <div class="dash-card c-discard"><span class="dot"></span><div class="num" id="reflist-batch-count">0</div><div class="label">업로드 배치 수</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>업로드 파일</th><th>건수</th><th>업로드 일시</th><th style="text-align:right">관리</th></tr></thead>
+          <tbody id="reflist-batch-tbody"></tbody>
+        </table>
+      </div>
+      <p style="font-size:12px;color:var(--text-3);margin-top:14px;">엑셀에서 "운송장번호 / 송장번호 / 반송장번호" 이름의 헤더 컬럼을 자동으로 찾아 등록합니다. 반품 등록 시 이 리스트에 없는 항목은 자동으로 <b>오입고</b>로 표시됩니다.</p>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Data Menu Modal (backup/restore/import/export) ===== -->
 <div class="modal-overlay" id="modal-data">
   <div class="modal">
@@ -721,6 +754,7 @@ const ICONS = {
   "upload":'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>',
   "file-input":'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M2 15h10"/><path d="m9 18 3-3-3-3"/>',
   "file-output":'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M2 15h10"/><path d="m6 12-3 3 3 3"/>',
+  "file-check":'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>',
   "rotate-ccw":'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
   "check-circle-2":'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
   "x-circle":'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
@@ -767,10 +801,11 @@ function loadState(){
       const parsed = JSON.parse(raw);
       if(!parsed.items) parsed.items=[];
       if(!parsed.settings) parsed.settings={darkMode:false};
+      if(!parsed.referenceList) parsed.referenceList = {entries:{}, batches:[]};
       return parsed;
     }
   }catch(e){ console.error("load error",e); }
-  return {items:[], settings:{darkMode:false}};
+  return {items:[], settings:{darkMode:false}, referenceList:{entries:{}, batches:[]}};
 }
 let state = loadState();
 /* 기존에 저장된 데이터의 상태값(구 표기)을 새 표기로 자동 변환 */
@@ -872,7 +907,7 @@ document.getElementById("btnDark").addEventListener("click", ()=>{
 /* ================= FILTER STATE ================= */
 const screenState = {
   s1:{search:"", field:"all", period:"all", startDate:"", endDate:"", sort:"desc", page:1, pageSize:10, selectedId:null},
-  s2:{search:"", field:"all", period:"all", startDate:"", endDate:"", status:"all", sort:"desc", page:1, pageSize:10, selectedId:null}
+  s2:{search:"", field:"all", period:"all", startDate:"", endDate:"", status:"all", listCheckFilter:"all", sort:"desc", page:1, pageSize:10, selectedId:null}
 };
 
 /* 오늘/이번주/이번달 버튼을 눌렀을 때 실제 달력 범위(시작일~종료일)를 계산 */
@@ -907,6 +942,9 @@ function getFiltered(screen){
   if(screen==="s2" && st.status!=="all"){
     arr = arr.filter(it=> statusKey(it.status)===st.status );
   }
+  if(screen==="s2" && st.listCheckFilter && st.listCheckFilter!=="all"){
+    arr = arr.filter(it=> listCheckLabel(it)===st.listCheckFilter );
+  }
   if(st.search.trim()){
     const q = st.search.trim().toLowerCase();
     arr = arr.filter(it=>{
@@ -934,6 +972,7 @@ function addItem(data){
     itemBarcode: data.itemBarcode||"",
     status: STATUS.none.label,
     yangpumContent:"", note:"", manager:"",
+    listCheck:"", // ""=미대조(자동판별), 정상/보류/오입고 = 수동 재판별값
     deleted:false, deletedAt:null
   };
   state.items.unshift(item);
@@ -1087,7 +1126,12 @@ function registerItem(){
 
   const item = addItem({returnNo, trackingNo:"", itemBarcode});
   lastRegisteredId = item.id;
-  toast("등록되었습니다. 상태를 선택해주세요.","success");
+
+  if(Object.keys(state.referenceList.entries).length>0 && !isInReferenceList(item)){
+    toast(`⚠ 오입고 - 고객 리스트에 없는 반품입니다! (${returnNo||itemBarcode})`, "error");
+  }else{
+    toast("등록되었습니다. 상태를 선택해주세요.","success");
+  }
   clearScanFields();
   renderAll();
   activateStatusPicker();
@@ -1198,6 +1242,21 @@ function pillHtml(statusLabel){
   const s = STATUS[key];
   return `<span class="pill ${s.cls}"><span class="d"></span>${s.label}</span>`;
 }
+function listCheckPillHtml(item){
+  const label = listCheckLabel(item);
+  const cls = listCheckClass(label);
+  return `<span class="pill ${cls}"><span class="d"></span>${label||"미대조"}</span>`;
+}
+function listCheckSelectHtml(item){
+  const current = listCheckLabel(item);
+  const cls = listCheckClass(current);
+  return `<select data-field="listCheck" class="status-select st-${cls}">
+    <option value="" ${current===""?"selected":""}>미대조</option>
+    <option value="정상" ${current==="정상"?"selected":""}>정상</option>
+    <option value="보류" ${current==="보류"?"selected":""}>보류</option>
+    <option value="오입고" ${current==="오입고"?"selected":""}>오입고</option>
+  </select>`;
+}
 
 function renderS1(){
   const st = screenState.s1;
@@ -1222,6 +1281,7 @@ function renderS1(){
         <td class="mono-cell">${escapeHtml(it.trackingNo)||"-"}</td>
         <td class="mono-cell">${escapeHtml(it.itemBarcode)||"-"}</td>
         <td>${pillHtml(it.status)}</td>
+        <td>${listCheckPillHtml(it)}</td>
         <td>${escapeHtml(it.note)||""}</td>
         <td>
           <div class="row-actions">
@@ -1270,6 +1330,7 @@ function renderS2(){
             ${Object.entries(STATUS).map(([k,v])=>`<option value="${v.label}" ${it.status===v.label?"selected":""}>${v.label}</option>`).join("")}
           </select>
         </td>
+        <td class="editable-cell">${listCheckSelectHtml(it)}</td>
         <td>
           <div class="row-actions">
             <button class="mini-icon-btn" data-act="detail" title="상세보기"><i data-lucide="eye"></i></button>
@@ -1338,6 +1399,7 @@ function renderDashboard(){
   const total = active.length;
   const counts = {none:0,done:0,hold:0,discard:0};
   active.forEach(i=> counts[statusKey(i.status)]++ );
+  const mismatchCount = active.filter(i=> listCheckLabel(i)==="오입고").length;
   const cards = [
     {cls:"c-today",label:"오늘 등록",num:today},
     {cls:"c-total",label:"전체 등록",num:total},
@@ -1345,6 +1407,7 @@ function renderDashboard(){
     {cls:"c-done",label:"정상",num:counts.done},
     {cls:"c-hold",label:"B등급",num:counts.hold},
     {cls:"c-discard",label:"C등급",num:counts.discard},
+    {cls:"c-discard",label:"오입고",num:mismatchCount},
   ];
   document.getElementById("dashGrid").innerHTML = cards.map(c=>`
     <div class="dash-card ${c.cls}"><span class="dot"></span><div class="num">${c.num}</div><div class="label">${c.label}</div></div>
@@ -1392,12 +1455,17 @@ document.getElementById("s2-tbody").addEventListener("input",(e)=>{
     e.target.className = "status-select st-"+key;
     renderDashboard();
     // also refresh screen1 pill state next time it's shown; no full re-render needed now
+  }else if(field==="listCheck"){
+    updateItem(id, {listCheck:e.target.value});
+    e.target.className = "status-select st-"+listCheckClass(e.target.value);
+    renderDashboard();
   }else{
     updateItem(id, {[field]: e.target.value});
   }
 });
 document.getElementById("s2-tbody").addEventListener("change",(e)=>{
   if(e.target.dataset.field==="status") toast("상태가 변경되었습니다.","success");
+  if(e.target.dataset.field==="listCheck") toast("리스트대조 결과가 변경되었습니다.","success");
 });
 
 function confirmDeleteRow(id){
@@ -1415,6 +1483,7 @@ function showDetail(id){
     <div class="k">운송장번호</div><div class="v">${escapeHtml(it.trackingNo)||"-"}</div>
     <div class="k">내품바코드</div><div class="v">${escapeHtml(it.itemBarcode)||"-"}</div>
     <div class="k">상태</div><div class="v">${pillHtml(it.status)}</div>
+    <div class="k">리스트대조</div><div class="v">${listCheckPillHtml(it)}</div>
     <div class="k">양품화내용</div><div class="v" style="font-family:var(--font-display);font-weight:500">${escapeHtml(it.yangpumContent)||"-"}</div>
     <div class="k">비고</div><div class="v" style="font-family:var(--font-display);font-weight:500">${escapeHtml(it.note)||"-"}</div>
     <div class="k">담당자</div><div class="v" style="font-family:var(--font-display);font-weight:500">${escapeHtml(it.manager)||"-"}</div>
@@ -1485,6 +1554,13 @@ document.getElementById("s2-statusSeg").addEventListener("click", e=>{
   document.querySelectorAll("#s2-statusSeg button").forEach(b=>b.classList.remove("active"));
   btn.classList.add("active");
   screenState.s2.status = btn.dataset.status; screenState.s2.page=1;
+  renderAll();
+});
+document.getElementById("s2-listCheckSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button[data-listcheck]"); if(!btn) return;
+  document.querySelectorAll("#s2-listCheckSeg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  screenState.s2.listCheckFilter = btn.dataset.listcheck; screenState.s2.page=1;
   renderAll();
 });
 
@@ -1571,7 +1647,7 @@ async function exportYpwExcel(){
     const items = getFiltered("s2");
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet("양품화리스트");
-    const headers = ["날짜","반송장","운송장","내품","양품화 내용","비고","담당자","상태"];
+    const headers = ["날짜","반송장","운송장","내품","양품화 내용","비고","담당자","상태","리스트대조"];
     ws.addRow(headers);
     const headerRow = ws.getRow(1);
     headerRow.eachCell(cell=>{
@@ -1581,7 +1657,7 @@ async function exportYpwExcel(){
     });
     headerRow.height = 24;
     items.forEach(it=>{
-      ws.addRow([it.date, it.returnNo, it.trackingNo, it.itemBarcode, it.yangpumContent, it.note, it.manager, it.status]);
+      ws.addRow([it.date, it.returnNo, it.trackingNo, it.itemBarcode, it.yangpumContent, it.note, it.manager, it.status, listCheckLabel(it)]);
     });
     ws.columns.forEach((col,i)=>{
       let max = headers[i].length;
@@ -1607,6 +1683,180 @@ function downloadBlob(buffer, filename){
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 2000);
 }
+
+/* ================= 고객 반품리스트 대조 (오입고 판별) ================= */
+function normKey(v){ return String(v||"").replace(/[^A-Za-z0-9]/g,"").toUpperCase(); }
+
+function isInReferenceList(item){
+  const list = state.referenceList.entries;
+  if(!list) return false;
+  const k1 = normKey(item.returnNo);
+  const k2 = normKey(item.trackingNo);
+  if(k1 && list[k1]) return true;
+  if(k2 && list[k2]) return true;
+  return false;
+}
+function listCheckLabel(item){
+  // 담당자가 수동으로 재판별한 값이 있으면 그것을 우선한다 (보류/오입고/정상)
+  if(item.listCheck) return item.listCheck;
+  if(Object.keys(state.referenceList.entries).length===0) return ""; // 대조할 고객 리스트가 아직 없으면 미대조
+  return isInReferenceList(item) ? "정상" : "오입고";
+}
+function listCheckClass(label){
+  if(label==="정상") return "done";
+  if(label==="보류") return "hold";
+  if(label==="오입고") return "discard";
+  return "none"; // 미대조
+}
+
+function renderRefListSummary(){
+  const entries = state.referenceList.entries;
+  const batches = state.referenceList.batches;
+  document.getElementById("reflist-total-count").textContent = Object.keys(entries).length;
+  document.getElementById("reflist-batch-count").textContent = batches.length;
+  const tbody = document.getElementById("reflist-batch-tbody");
+  if(batches.length===0){
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-3);padding:30px 0;">업로드된 고객 반품리스트가 없습니다</td></tr>`;
+  }else{
+    tbody.innerHTML = batches.slice().reverse().map(b=>{
+      const detail = (b.newCount!==undefined) ? `<div style="font-size:11px;color:var(--text-3);margin-top:2px;">신규 ${b.newCount} · 중복제외 ${b.dupCount}</div>` : "";
+      return `
+      <tr data-batch="${b.id}">
+        <td>${escapeHtml(b.fileName)}</td>
+        <td class="mono-cell">${b.count}건${detail}</td>
+        <td class="mono-cell">${(b.uploadedAt||"").replace("T"," ").slice(0,16)}</td>
+        <td><div class="row-actions"><button class="mini-icon-btn danger" data-del-batch="${b.id}" title="이 배치 삭제"><i data-lucide="trash-2"></i></button></div></td>
+      </tr>`;
+    }).join("");
+  }
+  renderIcons();
+}
+document.getElementById("reflist-batch-tbody").addEventListener("click",(e)=>{
+  const btn = e.target.closest("[data-del-batch]"); if(!btn) return;
+  const batchId = btn.getAttribute("data-del-batch");
+  askConfirm("이 배치를 삭제하시겠습니까?","해당 업로드로 등록된 번호들이 리스트에서 제거됩니다.", ()=>{
+    state.referenceList.batches = state.referenceList.batches.filter(b=>b.id!==batchId);
+    Object.keys(state.referenceList.entries).forEach(k=>{
+      if(state.referenceList.entries[k].batch===batchId) delete state.referenceList.entries[k];
+    });
+    persist(); renderRefListSummary(); renderAll();
+    toast("배치가 삭제되었습니다.","success");
+  });
+});
+
+document.getElementById("btnRefList").addEventListener("click", ()=>{ renderRefListSummary(); openModal("modal-reflist"); });
+document.getElementById("btnRefListClear").addEventListener("click", ()=>{
+  askConfirm("전체 반품리스트를 삭제하시겠습니까?","업로드된 모든 배치와 대조 기준 번호가 사라집니다.", ()=>{
+    state.referenceList = {entries:{}, batches:[]};
+    persist(); renderRefListSummary(); renderAll();
+    toast("고객 반품리스트가 초기화되었습니다.","success");
+  }, {warn:true});
+});
+
+document.getElementById("btnRefListUpload").addEventListener("click", ()=> document.getElementById("fileRefListUpload").click());
+document.getElementById("fileRefListUpload").addEventListener("change",(e)=>{
+  const file = e.target.files[0]; if(!file) return;
+  showLoading(true);
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const wb = XLSX.read(ev.target.result, {type:"array"});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {defval:""});
+      if(rows.length===0){ toast("엑셀에 데이터가 없습니다.","warn"); showLoading(false); return; }
+
+      const headerKeys = Object.keys(rows[0]);
+      const candidates = ["운송장번호","송장번호","반송장번호","운송장(박스번호)","운송장"];
+      let numberCol = headerKeys.find(h=> candidates.some(c=>h.replace(/\s/g,"").includes(c)));
+      if(!numberCol){
+        toast("운송장번호(또는 송장번호) 컬럼을 찾지 못했습니다. 엑셀 헤더를 확인해주세요.","error");
+        showLoading(false); return;
+      }
+      const nameCol = headerKeys.find(h=>["상품명","품목명","단품명"].some(c=>h.includes(c)));
+      const custCol = headerKeys.find(h=>["고객명","받는분","보내는분"].some(c=>h.includes(c)));
+
+      const batchId = uid();
+      let newCount = 0, dupCount = 0;
+      const seenInThisFile = new Set();
+      rows.forEach(r=>{
+        const raw = r[numberCol];
+        const key = normKey(raw);
+        if(!key) return;
+        const existedBefore = Object.prototype.hasOwnProperty.call(state.referenceList.entries, key);
+        const dup = existedBefore || seenInThisFile.has(key); // 이전 배치 또는 이번 파일 내 중복
+        seenInThisFile.add(key);
+        state.referenceList.entries[key] = {
+          raw:String(raw), productName: nameCol?String(r[nameCol]||""):"", customerName: custCol?String(r[custCol]||""):"",
+          batch: batchId, addedAt: nowStamp()
+        };
+        if(dup) dupCount++; else newCount++;
+      });
+      state.referenceList.batches.push({ id:batchId, fileName:file.name, count:newCount+dupCount, newCount, dupCount, uploadedAt: nowStamp() });
+      persist();
+      renderRefListSummary();
+      renderAll();
+      toast(`반품리스트 업로드 완료 — 신규 ${newCount}건 / 중복 제외 ${dupCount}건`,"success");
+    }catch(err){ console.error(err); toast("엑셀 파일을 읽는 중 오류가 발생했습니다.","error"); }
+    finally{ showLoading(false); }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = "";
+});
+
+/* 입고대사 엑셀: 고객 리스트 기준으로 실제 입고(스캔) 여부 판별 */
+async function exportReconcileExcel(){
+  const entries = state.referenceList.entries;
+  const keys = Object.keys(entries);
+  if(keys.length===0){ toast("등록된 고객 반품리스트가 없습니다. 먼저 엑셀을 업로드해주세요.","warn"); return; }
+  showLoading(true);
+  try{
+    const activeItems = state.items.filter(i=>!i.deleted);
+    const matchIndex = {};
+    activeItems.forEach(it=>{
+      const k1 = normKey(it.returnNo), k2 = normKey(it.trackingNo);
+      if(k1) matchIndex[k1] = it;
+      if(k2) matchIndex[k2] = it;
+    });
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet("입고대사");
+    const headers = ["원본번호","상품명","고객명","업로드파일","입고여부","등록일","반송장","내품","양품화상태"];
+    ws.addRow(headers);
+    const headerRow = ws.getRow(1);
+    headerRow.eachCell(cell=>{
+      cell.font = {bold:true, size:11, color:{argb:"FFFFFFFF"}};
+      cell.fill = {type:"pattern", pattern:"solid", fgColor:{argb:"FF5B5FEF"}};
+      cell.alignment = {vertical:"middle", horizontal:"center"};
+    });
+    headerRow.height = 24;
+
+    const batchNameOf = (id)=>{ const b = state.referenceList.batches.find(x=>x.id===id); return b?b.fileName:""; };
+    let arrivedCount=0, missingCount=0;
+    keys.forEach(k=>{
+      const e = entries[k];
+      const matched = matchIndex[k];
+      if(matched) arrivedCount++; else missingCount++;
+      ws.addRow([
+        e.raw, e.productName||"", e.customerName||"", batchNameOf(e.batch),
+        matched?"입고완료":"미입고",
+        matched?matched.date:"", matched?matched.returnNo:"", matched?matched.itemBarcode:"", matched?matched.status:""
+      ]);
+    });
+    ws.columns.forEach((col,i)=>{
+      let max = headers[i].length;
+      ws.eachRow(row=>{ const v=row.getCell(i+1).value; if(v) max=Math.max(max, String(v).length); });
+      col.width = Math.min(Math.max(max+3,10), 40);
+    });
+    ws.autoFilter = {from:{row:1,column:1}, to:{row:1,column:headers.length}};
+
+    const buf = await wb.xlsx.writeBuffer();
+    downloadBlob(buf, `입고대사_${todayISO().replace(/-/g,"")}.xlsx`);
+    toast(`입고대사 결과: 입고완료 ${arrivedCount}건 / 미입고 ${missingCount}건`,"success");
+  }catch(err){
+    console.error(err); toast("다운로드 중 오류가 발생했습니다.","error");
+  }finally{ showLoading(false); }
+}
+document.getElementById("btnRefListReconcile").addEventListener("click", exportReconcileExcel);
 
 /* ================= DATA MENU: BACKUP / RESTORE / IMPORT / EXPORT ================= */
 document.getElementById("btnDataMenu").addEventListener("click", ()=> openModal("modal-data"));
